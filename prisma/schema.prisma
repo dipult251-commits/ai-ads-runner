@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String?
+  password      String
+  image         String?
+  language      String        @default("en")
+  plan          String        @default("free")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  sessions      Session[]
+  ads           Ad[]
+  campaigns     Campaign[]
+  posters       Poster[]
+  socialPosts   SocialPost[]
+  adminActions  AdminAction[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Ad {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productName String
+  headline    String
+  description String
+  caption     String
+  hashtags    String[]  @default([])
+  language    String    @default("en")
+  platform    String
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+}
+
+model Campaign {
+  id                   String    @id @default(cuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                 String
+  description          String?
+  budget               Float
+  status               String    @default("draft")
+  startDate            DateTime?
+  endDate              DateTime?
+  platforms            String[]  @default(["facebook"])
+  targetAudience       String?
+  performance          Json?     @default("{}")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  publishedAt          DateTime?
+  requiresConfirmation Boolean   @default(true)
+
+  ads         Ad[]
+  posters     Poster[]
+  socialPosts SocialPost[]
+}
+
+model Poster {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  theme     String
+  layout    String
+  imageUrl  String?
+  prompt    String?
+  status    String    @default("draft")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+}
+
+model SocialPost {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     String
+  caption      String
+  hashtags     String[]  @default([])
+  imageUrl     String?
+  scheduledFor DateTime?
+  isPublished  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+}
+
+model AdminAction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String
+  description String?
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now())
+}

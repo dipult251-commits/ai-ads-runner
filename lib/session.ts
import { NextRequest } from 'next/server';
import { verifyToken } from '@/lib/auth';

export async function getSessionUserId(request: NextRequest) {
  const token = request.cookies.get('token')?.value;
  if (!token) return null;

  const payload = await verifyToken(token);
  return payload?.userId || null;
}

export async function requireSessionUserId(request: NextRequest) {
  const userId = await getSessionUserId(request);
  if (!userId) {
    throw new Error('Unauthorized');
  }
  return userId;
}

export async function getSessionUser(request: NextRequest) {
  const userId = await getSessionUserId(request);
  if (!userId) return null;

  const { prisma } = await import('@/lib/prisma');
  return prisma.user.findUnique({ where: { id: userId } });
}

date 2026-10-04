@@ -1,0 +1,87 @@
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export async function generateAdCopy({
+  productName,
+  language = 'en',
+  platform = 'facebook',
+  brief = '',
+}: {
+  productName: string;
+  language?: string;
+  platform?: string;
+  brief?: string;
+}) {
+  const fallback = {
+    headline:
+      language === 'hi'
+        ? `अपना ${productName} बनाएं, शानदार तरीके से`
+        : `${productName} That Stands Out`,
+    description:
+      language === 'hi'
+        ? 'उच्च गुणवत्ता, शानदार अनुभव और आसान उपयोग के साथ।'
+        : 'Premium quality and a high-converting experience for your audience.',
+    caption:
+      language === 'hi'
+        ? `✨ ${productName} के साथ अपने ब्रांड को नई ऊँचाइयों पर लेकर जाएँ।`
+        : `✨ Grow your brand with ${productName}. Strong value and conversion-first positioning.`,
+    hashtags:
+      language === 'hi'
+        ? ['#एआईएड्स', '#मार्केटिंग', '#ब्रांडग्रोथ']
+        : ['#AIAds', '#Marketing', '#BrandGrowth'],
+  };
+
+  if (!process.env.OPENAI_API_KEY) {
+    return fallback;
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a performance marketing copywriter. Return valid JSON with headline, description, caption, and hashtags.',
+        },
+        {
+          role: 'user',
+          content: `Create ad copy for product: ${productName}. Platform: ${platform}. Language: ${language}. Brief: ${brief || 'Modern conversion-focused ad'}. Return JSON only.`,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 300,
+    });
+
+    const text = response.choices[0]?.message?.content || '';
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        headline: parsed.headline || fallback.headline,
+        description: parsed.description || fallback.description,
+        caption: parsed.caption || fallback.caption,
+        hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : fallback.hashtags,
+      };
+    }
+  } catch (error) {
+    console.error('OpenAI ad generation failed:', error);
+  }
+
+  return fallback;
+}
+
+export async function generatePosterPrompt({
+  title,
+  theme,
+  layout,
+}: {
+  title: string;
+  theme: string;
+  layout: string;
+}) {
+  return `Create a ${theme.toLowerCase()} product poster for "${title}" with ${layout.toLowerCase()} composition, premium ad aesthetics, bold headline, high contrast colors, premium product lighting, and clean marketing layout.`;
+}

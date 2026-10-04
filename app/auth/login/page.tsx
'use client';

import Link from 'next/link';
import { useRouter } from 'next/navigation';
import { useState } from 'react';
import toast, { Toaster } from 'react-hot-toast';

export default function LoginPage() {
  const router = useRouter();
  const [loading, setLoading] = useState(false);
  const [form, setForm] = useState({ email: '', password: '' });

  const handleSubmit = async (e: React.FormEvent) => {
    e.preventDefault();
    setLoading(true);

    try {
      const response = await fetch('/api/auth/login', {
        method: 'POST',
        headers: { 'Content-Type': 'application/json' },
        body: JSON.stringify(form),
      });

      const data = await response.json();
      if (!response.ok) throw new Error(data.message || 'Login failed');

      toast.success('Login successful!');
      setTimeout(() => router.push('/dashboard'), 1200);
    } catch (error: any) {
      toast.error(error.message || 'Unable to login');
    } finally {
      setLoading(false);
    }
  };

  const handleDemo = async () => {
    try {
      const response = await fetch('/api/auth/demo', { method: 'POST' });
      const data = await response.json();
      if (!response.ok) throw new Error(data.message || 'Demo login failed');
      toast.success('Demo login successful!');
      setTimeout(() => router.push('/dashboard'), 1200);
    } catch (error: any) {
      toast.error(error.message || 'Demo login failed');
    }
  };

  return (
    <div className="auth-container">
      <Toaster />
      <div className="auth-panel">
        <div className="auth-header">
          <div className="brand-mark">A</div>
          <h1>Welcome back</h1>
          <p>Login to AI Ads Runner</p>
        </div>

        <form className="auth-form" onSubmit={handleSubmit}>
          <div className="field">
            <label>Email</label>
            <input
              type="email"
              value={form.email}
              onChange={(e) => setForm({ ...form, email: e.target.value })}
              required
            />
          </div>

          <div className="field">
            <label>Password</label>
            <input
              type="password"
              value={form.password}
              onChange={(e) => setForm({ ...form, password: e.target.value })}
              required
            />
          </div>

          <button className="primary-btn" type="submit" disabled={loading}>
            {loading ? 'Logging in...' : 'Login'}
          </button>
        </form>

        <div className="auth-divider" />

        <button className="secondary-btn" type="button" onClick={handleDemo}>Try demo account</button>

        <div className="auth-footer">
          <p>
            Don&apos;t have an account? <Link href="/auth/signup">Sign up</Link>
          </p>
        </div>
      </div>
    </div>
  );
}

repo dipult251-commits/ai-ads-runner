@@ -1,0 +1,5 @@
+import { AdminPanelPage } from '@/components/ai-ads-runner';
+
+export default function AdminRoute() {
+  return <AdminPanelPage />;
+}
